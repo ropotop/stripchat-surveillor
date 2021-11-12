@@ -1,6 +1,7 @@
+linux (tested on Ubuntu)
 chromedriver
 ffmpeg
-
+chromium (tested on 95.0.4638.54)
 
 #PYTHON
 selenium
@@ -8,6 +9,3 @@ requeschromedriver
 ffmpeg
 
 
-#PYTHON
-selenium
-requests
