@@ -1,0 +1,13 @@
+chromedriver
+ffmpeg
+
+
+#PYTHON
+selenium
+requeschromedriver
+ffmpeg
+
+
+#PYTHON
+selenium
+requests
