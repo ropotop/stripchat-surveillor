@@ -1,11 +1,10 @@
 linux (tested on Ubuntu)
-chromedriver
-ffmpeg
-chromium (tested on 95.0.4638.54)
+ChromeDriver 95.0.4638.54
+ffmpeg version 4.2.4-1ubuntu0.1
+chromium 95.0.4638.54
 
 #PYTHON
-selenium
-requeschromedriver
-ffmpeg
+selenium 3.141.0 
+requests 2.25.1
 
 

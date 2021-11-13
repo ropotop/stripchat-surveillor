@@ -1,0 +1,15 @@
+modules needed:
+- processive:
+    - m3u8 link grabber
+    - m3u8 link recorder
+    - m3u8 link saver
+    - model list grabber
+    - model list saver
+- manually actuated: 
+    - video processor
+    - model surveillance list changer
+databases needed:
+- model surveillance list : m3u8 links
+- model lists
+- recorded videos
+- processed videos
