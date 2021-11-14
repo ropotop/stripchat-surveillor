@@ -12,9 +12,9 @@ import concurrent.futures
 
 def m3u8_link_recorder(m3u8_link: str, model_username: str):
     tag = datetime.now().strftime("%y%m%d_%H%M%S")
+    subprocess.run(["mkdir", "vids_preprocessed"])
     subprocess.run(["mkdir", "vids_preprocessed/{}".format(model_username)])
-    subprocess.run(["ffmpeg", "-i", m3u8_link, "-c", "copy",
-                   "vids_preprocessed/{}/{}.mkv".format(model_username, tag)])
+    subprocess.run(["ffmpeg", "-i", m3u8_link, "-c", "copy", "vids_preprocessed/{}/{}.mkv".format(model_username, tag)])
 
 
 """this function is not needed anymore because the obligatory API-call that is needed to see which models are on-line
@@ -69,25 +69,26 @@ def stream_download_decider(all_model_names_480_option: dict, models: list):
 
     option_480p = []
     ids_followed_online = []
+    unames_followed_online = []
     with open("models_followed.txt", "r") as f:
         for line in f.readlines():
             model_followed = line.replace("\n", "")
             for i, model_online in enumerate(model_unames_online):
                 if model_followed == model_online.lower():
-                    option_480p.append(
-                        all_model_names_480_option.get(str(model_ids_online[i])))
-                    ids_followed_online.append(
-                        models_unames_ids_dict.get(model_online))
+                    option_480p.append(all_model_names_480_option.get(str(model_ids_online[i])))
+                    ids_followed_online.append(models_unames_ids_dict.get(model_online))
+                    unames_followed_online.append(list(models_unames_ids_dict.keys())[i])
 
-    return models_unames_ids_dict, dict(zip(ids_followed_online, option_480p))
+    return dict(zip(unames_followed_online, ids_followed_online)), dict(zip(ids_followed_online, option_480p))
 
 
 """no need for m3u8_link_recorder here because takes dict straight away."""
 
 
-def concurrent_stream_recording(usernames_ids_to_record, option_480p):
+def concurrent_stream_recording(usernames_ids_to_record: dict, option_480p: dict):
     models_to_record = 8
     usernames = list(usernames_ids_to_record.keys())
+    print(usernames_ids_to_record)
     ids = list(usernames_ids_to_record.values())
     m3u8_links = []
     for id in ids:
@@ -102,8 +103,7 @@ def concurrent_stream_recording(usernames_ids_to_record, option_480p):
                         id, id)
                     m3u8_links.append(m3u8_link)
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        executor.map(m3u8_link_recorder, m3u8_links[:models_to_record],
-                     usernames[:models_to_record])
+        executor.map(m3u8_link_recorder, m3u8_links[:models_to_record], usernames[:models_to_record])
 
 
 """invoke method for stitching together videos in each subdirectory of "vids_preprocessed"
@@ -131,7 +131,6 @@ def main():
         stuff1, stuff2 = model_list_grabber()
         stuff3, stuff4 = stream_download_decider(stuff1, stuff2)
         concurrent_stream_recording(stuff3, stuff4)
-        sleep(600)
 
 
 if __name__ == "__main__":
