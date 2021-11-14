@@ -1,5 +1,5 @@
-from time import sleep
 import json
+import os
 import subprocess
 from datetime import datetime
 import requests
@@ -110,8 +110,23 @@ def concurrent_stream_recording(usernames_ids_to_record: dict, option_480p: dict
 -directory which is instatiated by m3u8_link_recorder"""
 
 
-def video_processor():
-    pass
+def video_stitcher():
+    veedos = "vids_preprocessed"
+    subdirs = os.listdir(veedos)
+    for subdir in subdirs:
+        dir_and_subdir = "{}/{}".format(veedos, subdir)
+        vids = os.listdir(dir_and_subdir)
+        list_txt_dir = "{}/mylist.txt".format(dir_and_subdir)
+        for vid in vids:
+            vid_str = "\"file {}\"".format(vid)
+            output_dir = "{}/output.mkv".format(dir_and_subdir)
+            command_list = ["echo", vid_str, ">>", list_txt_dir]
+            subprocess.run("echo {} >> {}".format(vid_str, list_txt_dir), shell=True)
+        subprocess.run("ffmpeg -f concat -safe 0 -i {} -c copy {}".format(list_txt_dir, output_dir), shell=True)
+        for vid in vids:
+            vid_dir = "{}/{}".format(dir_and_subdir, vid)
+            subprocess.run("rm {}".format(vid_dir), shell=True)
+        subprocess.run("rm {}".format(list_txt_dir), shell=True)
 
 
 """change list of models to surveil"""
@@ -126,7 +141,6 @@ response model lists, recorded videos, processed videos"""
 
 
 def main():
-    # pass
     while True:
         stuff1, stuff2 = model_list_grabber()
         stuff3, stuff4 = stream_download_decider(stuff1, stuff2)
@@ -137,4 +151,3 @@ if __name__ == "__main__":
     main()
 
 
-# add logging
