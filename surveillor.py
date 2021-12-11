@@ -55,7 +55,7 @@ def model_list_grabber():
             resolution_option_480p = True
         uname = str(model.get("username"))
         models_online_resolution_option_480p.append(tuple([id, uname, resolution_option_480p]))
-
+    
     return models_online_resolution_option_480p, models
 
 
@@ -85,13 +85,14 @@ decide according to models_followed.txt list rank which four models to record.""
                 if model_followed == uname_online.lower():
                     models_followed_online.append(
                         tuple([id_online, uname_online, option_480p_online]))
+    print(models_followed_online)
 
     return models_followed_online
 
 
 def concurrent_stream_recording(models_online_followed: tuple):
 
-    models_to_record = 4
+    models_to_record = 8
     m3u8_links = []
     usernames = [x[1] for x in models_online_followed]
 
@@ -100,7 +101,7 @@ def concurrent_stream_recording(models_online_followed: tuple):
             m3u8_link = f"https://b-hls-01.strpst.com/hls/{id}/{id}_480p.m3u8"
             m3u8_links.append(m3u8_link)
         elif option_480p == False:
-            m3u8_link = f"https://b-hls-01.strpst.com/hls/{id}/{id}_480p.m3u8"
+            m3u8_link = f"https://b-hls-01.strpst.com/hls/{id}/{id}.m3u8"
             m3u8_links.append(m3u8_link)
     with concurrent.futures.ProcessPoolExecutor() as executor:
         executor.map(m3u8_link_recorder,m3u8_links[:models_to_record], usernames[:models_to_record])
