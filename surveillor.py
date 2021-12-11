@@ -92,7 +92,7 @@ decide according to models_followed.txt list rank which four models to record.""
 
 def concurrent_stream_recording(models_online_followed: tuple):
 
-    models_to_record = 4
+    models_to_record = 8
     m3u8_links = []
     usernames = [x[1] for x in models_online_followed]
 
