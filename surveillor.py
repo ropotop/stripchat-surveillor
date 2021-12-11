@@ -1,6 +1,5 @@
 import json
 import os
-import subprocess
 import ffmpy
 from datetime import datetime
 import requests
@@ -54,8 +53,9 @@ def model_list_grabber():
         else:
             resolution_option_480p = True
         uname = str(model.get("username"))
-        models_online_resolution_option_480p.append(tuple([id, uname, resolution_option_480p]))
-    
+        models_online_resolution_option_480p.append(
+            tuple([id, uname, resolution_option_480p]))
+
     return models_online_resolution_option_480p, models
 
 
@@ -92,7 +92,7 @@ decide according to models_followed.txt list rank which four models to record.""
 
 def concurrent_stream_recording(models_online_followed: tuple):
 
-    models_to_record = 8
+    models_to_record = 4
     m3u8_links = []
     usernames = [x[1] for x in models_online_followed]
 
@@ -104,41 +104,49 @@ def concurrent_stream_recording(models_online_followed: tuple):
             m3u8_link = f"https://b-hls-01.strpst.com/hls/{id}/{id}.m3u8"
             m3u8_links.append(m3u8_link)
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        executor.map(m3u8_link_recorder,m3u8_links[:models_to_record], usernames[:models_to_record])
+        executor.map(m3u8_link_recorder,
+                     m3u8_links[:models_to_record], usernames[:models_to_record])
 
 
 def video_stitcher():
     """invoke method for stitching together videos in each subdirectory of "vids_preprocessed"
 -directory which is instatiated by m3u8_link_recorder"""
 
-    veedos = "vids_preprocessed"
-    subdirs = os.listdir(veedos)
+    vids_preprocessed_dir = "vids_preprocessed"
+    subdirs = os.listdir(vids_preprocessed_dir)
+
     for subdir in subdirs:
-        dir_and_subdir = "{}/{}".format(veedos, subdir)
-        vids = os.listdir(dir_and_subdir)
-        list_txt_dir = "{}/mylist.txt".format(dir_and_subdir)
-        for vid in vids:
-            vid_str = "\"file {}\"".format(vid)
-            output_dir = "{}/output.mkv".format(dir_and_subdir)
-            command_list = ["echo", vid_str, ">>", list_txt_dir]
-            subprocess.run("echo {} >> {}".format(
-                vid_str, list_txt_dir), shell=True)
-        subprocess.run(
-            "ffmpeg -f concat -safe 0 -i {} -c copy {}".format(list_txt_dir, output_dir), shell=True)
-        for vid in vids:
-            vid_dir = "{}/{}".format(dir_and_subdir, vid)
-            subprocess.run("rm {}".format(vid_dir), shell=True)
-        subprocess.run("rm {}".format(list_txt_dir), shell=True)
+        dir_and_subdir = os.path.join(vids_preprocessed_dir, subdir)
+        if len(os.listdir(dir_and_subdir)) > 1:
+            datetime_tag = datetime.now().strftime("%y%m%d_%H%M%S")
+            vids = os.listdir(dir_and_subdir)
+            list_txt_dir = os.path.join(dir_and_subdir, "my_list.txt")
+            output_dir = os.path.join(
+                dir_and_subdir, f"concat_{datetime_tag}.mkv")
+
+            with open(list_txt_dir, "w") as fp:
+                for vid in vids:
+                    vid_str = f"file {vid}\n"
+                    fp.writelines(vid_str)
+
+            ff = ffmpy.FFmpeg(
+                global_options={"-f concat -safe 0"},
+                inputs={list_txt_dir: None},
+                outputs={output_dir: "-c copy"}
+            )
+            ff.run()
+
+            for vid in vids:
+                vid_dir = os.path.join(dir_and_subdir, vid)
+                os.remove(vid_dir)
+            os.remove(list_txt_dir)
 
 
-def model_surveillance_list_changer():
-    """change list of models to surveil"""
-
+def cli_wrapper():
+    """no options = default (get from models_followed.txt)
+    list of unames = overwrites to only check for unames
+    manipulate intervals (number of revs before stitch (which means break), recording length per interval)"""
     pass
-
-
-"""DBs needed: model surveillance list/m3u8 links/surveillance on-off switch table, json 
-response model lists, recorded videos, processed videos"""
 
 
 def main():
