@@ -1,4 +1,6 @@
-ffmpeg version 4.2.4-1ubuntu0.1
-requests 2.25.1
-
-
+certifi==2021.10.8
+charset-normalizer==2.0.9
+ffmpy==0.3.0
+idna==3.3
+requests==2.26.0
+urllib3==1.26.7

@@ -2,3 +2,7 @@ models_followed.txt
 vids_preprocessed/
 testing.ipynb
 chromedriver
+.ipynb_checkpoints
+tryout_ffmpy.ipynb
+test.mkv
+env

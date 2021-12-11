@@ -1,116 +1,115 @@
 import json
 import os
 import subprocess
+import ffmpy
 from datetime import datetime
 import requests
 import concurrent.futures
-
-
-
-"""records video through m3u8 link. Is called by concurrent_stream_recording method to be executed once per m3u8 link in parallel."""
+from time import sleep
+import threading
 
 
 def m3u8_link_recorder(m3u8_link: str, model_username: str):
-    tag = datetime.now().strftime("%y%m%d_%H%M%S")
-    subprocess.run(["mkdir", "vids_preprocessed"])
-    subprocess.run(["mkdir", "vids_preprocessed/{}".format(model_username)])
-    subprocess.run(["ffmpeg", "-i", m3u8_link, "-c", "copy", "vids_preprocessed/{}/{}.mkv".format(model_username, tag)])
+    """records video through m3u8 link. Is called by concurrent_stream_recording 
+    method to be executed once per m3u8 link in parallel."""
 
+    vids_preprocessed_dir = "vids_preprocessed"
+    model_path = os.path.join(vids_preprocessed_dir, model_username)
+    datetime_tag = datetime.now().strftime("%y%m%d_%H%M%S")
+    vid_name = f"{datetime_tag}.mkv"
+    vid_path = os.path.join(vids_preprocessed_dir, model_username, vid_name)
+    ff = ffmpy.FFmpeg(
+        inputs={m3u8_link: None},
+        outputs={vid_path: "-c copy"}
+    )
 
-"""this function is not needed anymore because the obligatory API-call that is needed to see which models are on-line
- gives enough information to deduct the m3u8-link"""
+    if os.path.isdir(vids_preprocessed_dir) == False:
+        os.mkdir(vids_preprocessed_dir)
+    if os.path.isdir(model_path) == False:
+        os.mkdir(model_path)
 
-
-def m3u8_link_saver():
-    pass
-
-
-"""ask xhamsterlive.com which models are online (with all sorts of other data). Is pre-configured to look for girls."""
+    thread_1 = threading.Thread(target=ff.run)
+    thread_1.start()
+    while not ff.process:
+        sleep(600)
+    ff.process.terminate()
+    thread_1.join()
 
 
 def model_list_grabber():
+    """ask xhamsterlive.com which models are online (with all sorts of other data). 
+    Is pre-configured to look for girls. tuple index: id, uname, 480p option"""
+
     url = "https://xhamsterlive.com/api/front/v2/models?topLimit=10000&primaryTag=girls"
     r = requests.get(url, stream=True)
     req = json.loads(r.content)
     models = req.get("blocks")[5].get("models")
-    resolution_option_480p = []
-    ids_online = []
+    model_list_saver(models)
+    models_online_resolution_option_480p = []
+
     for model in models:
-        ids_online.append(str(model.get("id")))
+        id = str(model.get("id"))
         if model.get("broadcastSettings").get("presets").get("testing") == None:
-            resolution_option_480p.append(False)
+            resolution_option_480p = False
         else:
-            resolution_option_480p.append(True)
+            resolution_option_480p = True
+        uname = str(model.get("username"))
+        models_online_resolution_option_480p.append(tuple([id, uname, resolution_option_480p]))
 
-    models_online = dict(zip(ids_online, resolution_option_480p))
-
-    return models_online, models
-
-
-"""called to save API-data to create a cool dataset."""
+    return models_online_resolution_option_480p, models
 
 
-def model_list_saver():
-    pass
+def model_list_saver(model_list):
+    """called to save API-data to create a cool dataset."""
+
+    data_dump_dir = "data_dump"
+    datetime_tag = datetime.now().strftime("%y%m%d_%H%M%S")
+    json_file_name = f"{datetime_tag}.json"
+    json_file_path = os.path.join(data_dump_dir, json_file_name)
+
+    if os.path.isdir(data_dump_dir) == False:
+        os.mkdir(data_dump_dir)
+    with open(json_file_path, "w") as fp:
+        json.dump(model_list, fp)
 
 
-"""takes dict of all models online with model uname as key and model id as value. Will 
-decide according to models_followed.txt list rank which four models to record"""
+def stream_download_decider(all_model_names_480_option: tuple):
+    """takes tuple of all models online with odel id, model uname and 480p option. Will 
+decide according to models_followed.txt list rank which four models to record."""
 
-
-def stream_download_decider(all_model_names_480_option: dict, models: list):
-    model_unames_online = []
-    model_ids_online = []
-    for model in models:
-        model_unames_online.append(model.get("username"))
-        model_ids_online.append(model.get("id"))
-
-    models_unames_ids_dict = dict(zip(model_unames_online, model_ids_online))
-
-    option_480p = []
-    ids_followed_online = []
-    unames_followed_online = []
+    models_followed_online = []
     with open("models_followed.txt", "r") as f:
         for line in f.readlines():
             model_followed = line.replace("\n", "")
-            for i, model_online in enumerate(model_unames_online):
-                if model_followed == model_online.lower():
-                    option_480p.append(all_model_names_480_option.get(str(model_ids_online[i])))
-                    ids_followed_online.append(models_unames_ids_dict.get(model_online))
-                    unames_followed_online.append(list(models_unames_ids_dict.keys())[i])
+            for id_online, uname_online, option_480p_online in all_model_names_480_option:
+                if model_followed == uname_online.lower():
+                    models_followed_online.append(
+                        tuple([id_online, uname_online, option_480p_online]))
 
-    return dict(zip(unames_followed_online, ids_followed_online)), dict(zip(ids_followed_online, option_480p))
-
-
-"""no need for m3u8_link_recorder here because takes dict straight away."""
+    return models_followed_online
 
 
-def concurrent_stream_recording(usernames_ids_to_record: dict, option_480p: dict):
-    models_to_record = 8
-    usernames = list(usernames_ids_to_record.keys())
-    print(usernames_ids_to_record)
-    ids = list(usernames_ids_to_record.values())
+def concurrent_stream_recording(models_online_followed: tuple):
+
+    models_to_record = 4
     m3u8_links = []
-    for id in ids:
-        for stream_option in list(option_480p.keys()):
-            if stream_option == id:
-                if option_480p.get(stream_option) == True:
-                    m3u8_link = "https://b-hls-01.strpst.com/hls/{}/{}_480p.m3u8".format(
-                        id, id)
-                    m3u8_links.append(m3u8_link)
-                elif option_480p.get(stream_option) == False:
-                    m3u8_link = "https://b-hls-01.strpst.com/hls/{}/{}.m3u8".format(
-                        id, id)
-                    m3u8_links.append(m3u8_link)
+    usernames = [x[1] for x in models_online_followed]
+
+    for id, uname, option_480p in models_online_followed:
+        if option_480p == True:
+            m3u8_link = f"https://b-hls-01.strpst.com/hls/{id}/{id}_480p.m3u8"
+            m3u8_links.append(m3u8_link)
+        elif option_480p == False:
+            m3u8_link = f"https://b-hls-01.strpst.com/hls/{id}/{id}_480p.m3u8"
+            m3u8_links.append(m3u8_link)
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        executor.map(m3u8_link_recorder, m3u8_links[:models_to_record], usernames[:models_to_record])
-
-
-"""invoke method for stitching together videos in each subdirectory of "vids_preprocessed"
--directory which is instatiated by m3u8_link_recorder"""
+        executor.map(m3u8_link_recorder,m3u8_links[:models_to_record], usernames[:models_to_record])
 
 
 def video_stitcher():
+    """invoke method for stitching together videos in each subdirectory of "vids_preprocessed"
+-directory which is instatiated by m3u8_link_recorder"""
+
     veedos = "vids_preprocessed"
     subdirs = os.listdir(veedos)
     for subdir in subdirs:
@@ -121,18 +120,19 @@ def video_stitcher():
             vid_str = "\"file {}\"".format(vid)
             output_dir = "{}/output.mkv".format(dir_and_subdir)
             command_list = ["echo", vid_str, ">>", list_txt_dir]
-            subprocess.run("echo {} >> {}".format(vid_str, list_txt_dir), shell=True)
-        subprocess.run("ffmpeg -f concat -safe 0 -i {} -c copy {}".format(list_txt_dir, output_dir), shell=True)
+            subprocess.run("echo {} >> {}".format(
+                vid_str, list_txt_dir), shell=True)
+        subprocess.run(
+            "ffmpeg -f concat -safe 0 -i {} -c copy {}".format(list_txt_dir, output_dir), shell=True)
         for vid in vids:
             vid_dir = "{}/{}".format(dir_and_subdir, vid)
             subprocess.run("rm {}".format(vid_dir), shell=True)
         subprocess.run("rm {}".format(list_txt_dir), shell=True)
 
 
-"""change list of models to surveil"""
-
-
 def model_surveillance_list_changer():
+    """change list of models to surveil"""
+
     pass
 
 
@@ -142,12 +142,12 @@ response model lists, recorded videos, processed videos"""
 
 def main():
     while True:
-        stuff1, stuff2 = model_list_grabber()
-        stuff3, stuff4 = stream_download_decider(stuff1, stuff2)
-        concurrent_stream_recording(stuff3, stuff4)
+        for i in range(6):
+            models_online, models = model_list_grabber()
+            models_online_followed = stream_download_decider(models_online)
+            concurrent_stream_recording(models_online_followed)
+        video_stitcher()
 
 
 if __name__ == "__main__":
     main()
-
-
