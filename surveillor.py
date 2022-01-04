@@ -1,18 +1,21 @@
+#! /usr/bin/env python
+
+import concurrent.futures
 import json
 import os
-from datetime import datetime
-import concurrent.futures
-from time import sleep
-import threading
 import sys
+import threading
+from datetime import datetime
+from time import sleep
 
-import requests
 import ffmpy
+import requests
 
 
 def m3u8_link_recorder(m3u8_link: str, model_username: str):
     """records video through m3u8 link. Is called by concurrent_stream_recording 
-    method to be executed once per m3u8 link in parallel."""
+    method to be executed once per m3u8 link in parallel.
+    """
 
     vids_preprocessed_dir = "vids_preprocessed"
     model_path = os.path.join(vids_preprocessed_dir, model_username)
@@ -39,7 +42,8 @@ def m3u8_link_recorder(m3u8_link: str, model_username: str):
 
 def model_list_grabber():
     """ask xhamsterlive.com which models are online (with all sorts of other data). 
-    Is pre-configured to look for girls. tuple index: id, uname, 480p option"""
+    Is pre-configured to look for girls. tuple index: id, uname, 480p option
+    """
 
     url = "https://xhamsterlive.com/api/front/v2/models?topLimit=10000&primaryTag=girls"
     r = requests.get(url, stream=True)
@@ -62,7 +66,8 @@ def model_list_grabber():
 
 
 def model_list_saver(model_list):
-    """called to save API-data to create a cool dataset."""
+    """called to save API-data to create a cool dataset.
+    """
 
     data_dump_dir = "data_dump"
     datetime_tag = datetime.now().strftime("%y%m%d_%H%M%S")
@@ -77,10 +82,11 @@ def model_list_saver(model_list):
 
 def stream_download_decider(all_model_names_480_option: tuple):
     """takes tuple of all models online with odel id, model uname and 480p option. Will 
-decide according to models_followed.txt list rank which four models to record."""
+    decide according to models_followed.txt list rank which four models to record.
+    """
 
     models_followed_online = []
-    if len(sys.argv) == 1: 
+    if len(sys.argv) == 1:
         with open("models_followed.txt", "r") as f:
             for line in f.readlines():
                 model_followed = line.replace("\n", "")
@@ -104,6 +110,8 @@ decide according to models_followed.txt list rank which four models to record.""
 
 
 def concurrent_stream_recording(models_online_followed: tuple):
+    """Invokes concurrent library.
+    """
 
     models_to_record = 8
     m3u8_links = []
@@ -123,7 +131,8 @@ def concurrent_stream_recording(models_online_followed: tuple):
 
 def video_stitcher():
     """invoke method for stitching together videos in each subdirectory of "vids_preprocessed"
--directory which is instatiated by m3u8_link_recorder"""
+    -directory which is instatiated by m3u8_link_recorder
+    """
 
     vids_preprocessed_dir = "vids_preprocessed"
     subdirs = os.listdir(vids_preprocessed_dir)
@@ -153,14 +162,6 @@ def video_stitcher():
                 vid_dir = os.path.join(dir_and_subdir, vid)
                 os.remove(vid_dir)
             os.remove(list_txt_dir)
-
-
-def cli_wrapper():
-    """no options = default (get from models_followed.txt)
-    list of unames = overwrites to only check for unames
-    manipulate intervals (number of revs before stitch (which means break), recording length per interval)"""
-    pass
-
 
 
 def main():
