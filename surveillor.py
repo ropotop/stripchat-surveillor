@@ -1,11 +1,13 @@
 import json
 import os
-import ffmpy
 from datetime import datetime
-import requests
 import concurrent.futures
 from time import sleep
 import threading
+import sys
+
+import requests
+import ffmpy
 
 
 def m3u8_link_recorder(m3u8_link: str, model_username: str):
@@ -78,14 +80,25 @@ def stream_download_decider(all_model_names_480_option: tuple):
 decide according to models_followed.txt list rank which four models to record."""
 
     models_followed_online = []
-    with open("models_followed.txt", "r") as f:
-        for line in f.readlines():
-            model_followed = line.replace("\n", "")
+    if len(sys.argv) == 1: 
+        with open("models_followed.txt", "r") as f:
+            for line in f.readlines():
+                model_followed = line.replace("\n", "")
+                for id_online, uname_online, option_480p_online in all_model_names_480_option:
+                    if model_followed == uname_online.lower():
+                        models_followed_online.append(
+                            tuple([id_online, uname_online, option_480p_online]))
+    else:
+        models_followed = sys.argv[1:]
+        for model_followed in models_followed:
             for id_online, uname_online, option_480p_online in all_model_names_480_option:
                 if model_followed == uname_online.lower():
                     models_followed_online.append(
                         tuple([id_online, uname_online, option_480p_online]))
-    print(models_followed_online)
+    if len(models_followed_online) > 0:
+        print(models_followed_online)
+    elif len(models_followed_online) == 0:
+        print("none of your models are online")
 
     return models_followed_online
 
@@ -147,6 +160,7 @@ def cli_wrapper():
     list of unames = overwrites to only check for unames
     manipulate intervals (number of revs before stitch (which means break), recording length per interval)"""
     pass
+
 
 
 def main():
