@@ -164,8 +164,10 @@ def video_stitcher():
             output_dir = os.path.join(
                 dir_and_subdir, f"concat_{datetime_tag()}.mkv")
 
+            dict_ = dict(zip([int(''.join((x.split('_')[-2], x.split('_')[-1].replace('.mkv', '')))) for x in vids], [x for x in vids]))
+            vids_sorted = list(dict(sorted(dict_.items())).values())
             with open(list_txt_dir, "w") as fp:
-                for vid in vids:
+                for vid in vids_sorted:
                     vid_str = f"file {vid}\n"
                     fp.writelines(vid_str)
 
