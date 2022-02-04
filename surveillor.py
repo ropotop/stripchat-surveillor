@@ -59,10 +59,10 @@ def m3u8_link_recorder(m3u8_link: str, model_username: str, sleep_time: int):
 
 def model_list_grabber():
     """ask xhamsterlive.com which models are online (with all sorts of other data). 
-    Is pre-configured to look for girls. tuple index: id, uname, 480p option
+    tuple index: id, uname, 480p option
     """
 
-    url = "https://xhamsterlive.com/api/front/v2/models?topLimit=10000&primaryTag=girls"
+    url = "https://xhamsterlive.com/api/front/v2/models?topLimit=10000"
     r = requests.get(url, stream=True)
     req = json.loads(r.content)
     models = req.get("blocks")[5].get("models")
