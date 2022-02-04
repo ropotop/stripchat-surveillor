@@ -8,6 +8,7 @@ import threading
 from datetime import datetime
 from time import sleep
 import logging
+import multiprocessing
 
 import ffmpy
 import requests
@@ -192,7 +193,7 @@ def main():
             logit(f"{len(models_online)} followed models are online")
             models_online_followed = stream_download_decider(models_online)
             logit(f"{len(models_online_followed)} followed models are online")
-            concurrent_stream_recording(models_online_followed, 150, 8)
+            concurrent_stream_recording(models_online_followed, 60, multiprocessing.cpu_count())
         video_stitcher()
 
 
