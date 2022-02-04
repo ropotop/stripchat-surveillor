@@ -34,11 +34,11 @@ def m3u8_link_recorder(m3u8_link: str, model_username: str, sleep_time: int):
 
     vids_preprocessed_dir = "vids_preprocessed"
     model_path = os.path.join(vids_preprocessed_dir, model_username)
-    vid_name = f"{datetime_tag()}.mkv"
+    vid_name = f"{datetime_tag()}.mp4"
     vid_path = os.path.join(vids_preprocessed_dir, model_username, vid_name)
     ff = ffmpy.FFmpeg(
         inputs={m3u8_link: None},
-        outputs={vid_path: "-c copy"}
+        outputs={vid_path: "-c:v libx264"}
     )
 
     if not os.path.isdir(vids_preprocessed_dir):
