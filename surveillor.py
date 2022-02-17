@@ -34,7 +34,7 @@ def m3u8_link_recorder(m3u8_link: str, model_username: str, sleep_time: int):
 
     vids_preprocessed_dir = "vids_preprocessed"
     model_path = os.path.join(vids_preprocessed_dir, model_username)
-    vid_name = f"{datetime_tag()}.mp4"
+    vid_name = f"{datetime_tag()}.mkv"
     vid_path = os.path.join(vids_preprocessed_dir, model_username, vid_name)
     ff = ffmpy.FFmpeg(
         inputs={m3u8_link: None},
@@ -163,9 +163,9 @@ def video_stitcher():
             vids = os.listdir(dir_and_subdir)
             list_txt_dir = os.path.join(dir_and_subdir, "my_list.txt")
             output_dir = os.path.join(
-                dir_and_subdir, f"concat_{datetime_tag()}.mp4")
+                dir_and_subdir, f"concat_{datetime_tag()}.mkv")
 
-            dict_ = dict(zip([int(''.join((x.split('_')[-2], x.split('_')[-1].replace('.mp4', '')))) for x in vids], [x for x in vids]))
+            dict_ = dict(zip([int(''.join((x.split('_')[-2], x.split('_')[-1].replace('.mkv', '')))) for x in vids], [x for x in vids]))
             vids_sorted = list(dict(sorted(dict_.items())).values())
             with open(list_txt_dir, "w") as fp:
                 for vid in vids_sorted:
